@@ -17,7 +17,6 @@ app.get("/", (req, res) => {
 
 function callChatGPT(url, token, message) {
     return new Promise(function (resolve, reject) {
-        console.log(url);
         request.post({
             "headers": {
                 "Content-Type": "application/json",
@@ -43,19 +42,62 @@ function callChatGPT(url, token, message) {
     });
 }
 
-app.post("/api/v1/chatgpt", async (req, res) => {
+function callCoinMarketCap(url, apiKey) {
+    return new Promise(function (resolve, reject) {
+        request.get({
+            "headers": {
+                "Accept": "application/json",
+                "X-CMC_PRO_API_KEY": apiKey,
+            },
+            url: url,
+        }, function(error, response, body) {
+            if(error) {
+                reject(error);
+            }
+            resolve(JSON.parse(body));
+        });
+    })
+}
+
+app.post("/api/v1/chat-gpt", async (req, res) => {
     const token = "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";
 
     try {
         let httpResponse = await callChatGPT("https://openrouter.ai/api/v1/chat/completions", token, req.body.message);
 
         res.json({
-            "result": httpResponse,
+            "message": "Success!",
+            "status": 200,
+            "data": {
+                "result": httpResponse,
+            },
         })
     } catch(err) {
         res.json({
-            "result": err,
+            "message": `There's an error when calling the API: ${err}`,
+            "status": 400,
         })
+    }
+});
+
+app.post("/api/v1/coin-market-cap", async (req, res) => {
+    const apiKey = "c4729bc9-8aac-4b18-b93b-d82357670aca";
+
+    try {
+        let httpResponse = await callCoinMarketCap("https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest", apiKey);
+
+        res.json({
+            "message": "Success!",
+            "status": 200,
+            "data": {
+                "result": httpResponse,
+            },
+        });
+    } catch(err) {
+        res.json({
+            "message": `There's an error when calling the API: ${err}`,
+            "status": 400,
+        });
     }
 });
 
