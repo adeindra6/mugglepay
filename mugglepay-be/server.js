@@ -43,7 +43,7 @@ function callChatGPT(url, token, message) {
     });
 }
 
-app.post("/api/v1/chat", async (req, res) => {
+app.post("/api/v1/chatgpt", async (req, res) => {
     const token = "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";
 
     try {
