@@ -17,9 +17,13 @@ export default function Home() {
     setLoading(true);
     await axios.post(`${serverUrl}/api/v1/chat-gpt`, {
         "message": message,
+      }, {
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+        },
       })
       .then((response) => {
-        setChatGPTData(response.data.choices[0].message.content);
+        setChatGPTData(response.data.data.result.choices[0].message.content);
       })
       .catch((error) => {
         console.log(error);
@@ -31,9 +35,13 @@ export default function Home() {
 
   const fetchCoinMarketCapData = async () => {
     setLoading1(true);
-    await axios.post(`${serverUrl}/api/v1/coin-market-cap`)
+    await axios.post(`${serverUrl}/api/v1/coin-market-cap`, null, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+      },
+    })
       .then((response) => {
-        setCoinMarketCapData(response.data.data);
+        setCoinMarketCapData(response.data.data.result.data);
       })
       .catch((error) => {
         console.log(error);
@@ -47,7 +55,7 @@ export default function Home() {
     let coinData = [];
     for(let i=0; i<data.length; i++) {
       const item = data[i];
-      coinData.push(<li key={item.id}>item.name (item.symbol)</li>);
+      coinData.push(<li key={item.id}>{item.name} ({item.symbol}): {item.quote.USD.price} USD</li>);
     }
 
     return coinData;
@@ -97,11 +105,15 @@ export default function Home() {
           <button className="btn btn-success">Send to shawn@mugglepay.com</button>
         </div>
         {coinMarketCapData != null &&
-        <div className={styles.ctas}>
-          <h3>Here's coins price information fetched from https://coinmarketcap.com</h3>
-          <ol>
-            {getCoinMarketCapData(coinMarketCapData)}
-          </ol>
+        <div>
+          <div className={styles.ctas}>
+            <h3>Here's coins price information fetched from https://coinmarketcap.com</h3>
+          </div>
+          <div className={styles.ctas}>
+            <ol>
+              {getCoinMarketCapData(coinMarketCapData)}
+            </ol>
+          </div>
         </div>
         }
       </main>
