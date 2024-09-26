@@ -2,6 +2,7 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const request = require("request");
+const sendEmail = require("./email.js");
 
 const app = express();
 
@@ -99,6 +100,17 @@ app.post("/api/v1/coin-market-cap", async (req, res) => {
             "status": 400,
         });
     }
+});
+
+app.post("/api/v1/send-email", async (req, res) => {
+    let sendToEmailRes = `The latest price of Bitcoin is ${req.body.data} USD`;
+    sendEmail(sendToEmailRes);
+
+    res.json({
+        "message": "Email has been sent!",
+        "status": 200,
+        "data": sendToEmailRes,
+    });
 });
 
 const PORT = 3001;

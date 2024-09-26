@@ -7,8 +7,10 @@ import { useState } from "react";
 export default function Home() {
   const [chatGPTData, setChatGPTData] = useState(null);
   const [coinMarketCapData, setCoinMarketCapData] = useState(null);
+  const [emailSent, setEmailSent] = useState(null);
   const [loading, setLoading] = useState(false);
   const [loading1, setLoading1] = useState(false);
+  const [loading2, setLoading2] = useState(false);
   const [message, setMessage] = useState("");
 
   const serverUrl = "http://localhost:3001";
@@ -31,7 +33,7 @@ export default function Home() {
       .finally(() => {
         setLoading(false);
       });
-  }
+  };
 
   const fetchCoinMarketCapData = async () => {
     setLoading1(true);
@@ -49,7 +51,7 @@ export default function Home() {
       .finally(() => {
         setLoading1(false);
       })
-  }
+  };
 
   const getCoinMarketCapData = (data) => {
     let coinData = [];
@@ -59,7 +61,32 @@ export default function Home() {
     }
 
     return coinData;
-  }
+  };
+
+  const sendEmail = async () => {
+    if(coinMarketCapData != null) {
+      setLoading2(true);
+      await axios.post(`${serverUrl}/api/v1/send-email`, {
+          "data": coinMarketCapData[0].quote.USD.price,
+        }, {
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+          },
+        })
+        .then((response) => {
+          setEmailSent(response.data.message);
+        })
+        .catch((error) => {
+          console.log(error);
+        })
+        .finally(() => {
+          setLoading2(false);
+        });
+    }
+    else {
+      alert("Please fetch coin price from https://coinmarketcap.com first!");
+    }
+  };
 
   return (
     <div className={styles.page}>
@@ -95,6 +122,11 @@ export default function Home() {
           <h3>Fetching response from Coin Market Cap. Please wait...</h3>
         </div>
         }
+        {loading2 &&
+        <div className={styles.ctas}>
+          <h3>Sending email please wait...</h3>
+        </div>
+        }
         {chatGPTData != null &&
         <div className={styles.ctas}>
           <h3>Here's the answer from Chat GPT:</h3>
@@ -102,8 +134,13 @@ export default function Home() {
         </div>
         }
         <div className={styles.ctas}>
-          <button className="btn btn-success">Send to shawn@mugglepay.com</button>
+          <button className="btn btn-success" onClick={() => sendEmail()}>Send to shawn@mugglepay.com the price of Bitcoin</button>
         </div>
+        {emailSent != null && 
+        <div className={styles.ctas}>
+          <h4>{emailSent}</h4>
+        </div>
+        }
         {coinMarketCapData != null &&
         <div>
           <div className={styles.ctas}>
