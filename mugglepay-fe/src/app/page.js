@@ -12,6 +12,7 @@ export default function Home() {
   const [loading1, setLoading1] = useState(false);
   const [loading2, setLoading2] = useState(false);
   const [message, setMessage] = useState("");
+  const [answer, setAnswer] = useState("");
 
   const serverUrl = "http://localhost:3001";
 
@@ -88,33 +89,48 @@ export default function Home() {
     }
   };
 
+  const sendPrompt = async () => {
+    setLoading(true);
+    await axios.post(`${serverUrl}/api/v1/send-prompt`, {
+      "prompt": message,
+    }, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+      },
+    })
+      .then((response) => {
+        setAnswer(response.data.data.result);
+      })
+      .catch((error) => {
+        console.log(error);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  };
+
   return (
     <div className={styles.page}>
       <main className={styles.main}>
-        <ol>
-          <li>
-            Welcome to MugglePay Crypto Price Checker
-          </li>
-          <li>
-            You can check it via Chat GPT and Coin Market Cap below
-          </li>
-        </ol>
+        <h1 style={{textAlign: "center"}}>MugglePay Chatbot</h1>
         <div className={styles.ctas}>
           <input
             className="form-control"
-            placeholder="Ask Chat GPT"
+            placeholder="Give prompt here"
             onChange={(e) => {
               setMessage(e.currentTarget.value);
             }}
             />
-          <button className="btn btn-primary" onClick={() => fetchChatGPTData()}>Ask</button>
+          <button className="btn btn-primary" onClick={() => sendPrompt()}>Send</button>
         </div>
+        {/*
         <div className={styles.ctas}>
           <button className="btn btn-info" onClick={() => fetchCoinMarketCapData()}>Fetch Data from Coin Market Cap</button>
         </div>
+        */}
         {loading &&
         <div className={styles.ctas}>
-          <h3>Fetching response from Chat GPT. Please wait...</h3>
+          <h3>Generating answer. Please wait...</h3>
         </div>
         }
         {loading1 &&
@@ -127,15 +143,22 @@ export default function Home() {
           <h3>Sending email please wait...</h3>
         </div>
         }
+        {answer != "" &&
+        <div className={styles.ctas}>
+          <h3>{answer}</h3>
+        </div>
+        }
         {chatGPTData != null &&
         <div className={styles.ctas}>
           <h3>Here's the answer from Chat GPT:</h3>
           <p>{chatGPTData}</p>
         </div>
         }
+        {/*
         <div className={styles.ctas}>
           <button className="btn btn-success" onClick={() => sendEmail()}>Send to shawn@mugglepay.com the price of Bitcoin</button>
         </div>
+        */}
         {emailSent != null && 
         <div className={styles.ctas}>
           <h4>{emailSent}</h4>

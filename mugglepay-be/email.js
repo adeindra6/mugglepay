@@ -10,10 +10,10 @@ const transporter = nodemailer.createTransport({
     },
 });
 
-function sendEmail(data) {
+function sendEmail(data, to) {
     const mailOption = {
         "from": "no-reply@mugglepay.com",
-        "to": "shawn@mugglepay.com",
+        "to": to,
         "subject": "Latest price of Bitcoin",
         "text": data,
     };

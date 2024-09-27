@@ -16,6 +16,8 @@ app.get("/", (req, res) => {
     });
 });
 
+let latestBitcoinPrice = 0;
+
 function callChatGPT(url, token, message) {
     return new Promise(function (resolve, reject) {
         request.post({
@@ -111,6 +113,54 @@ app.post("/api/v1/send-email", async (req, res) => {
         "status": 200,
         "data": sendToEmailRes,
     });
+});
+
+app.post("/api/v1/send-prompt", async (req, res) => {
+    let prompt = req.body.prompt.toLowerCase();
+
+    if(prompt.includes("price") && prompt.includes("bitcoin")) {
+        const apiKey = "c4729bc9-8aac-4b18-b93b-d82357670aca";
+
+        try {
+            let httpResponse = await callCoinMarketCap("https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest", apiKey);
+    
+            latestBitcoinPrice = httpResponse.data[0].quote.USD.price.toFixed(2);
+            res.json({
+                "message": "Success!",
+                "status": 200,
+                "data": {
+                    "result": `The latest price of Bitcoin is: $${httpResponse.data[0].quote.USD.price.toFixed(2)} USD`,
+                },
+            });
+        } catch(err) {
+            res.json({
+                "message": `There's an error when calling the API: ${err}`,
+                "status": 400,
+            });
+        }
+    }
+    else if(prompt.includes("send") && prompt.includes("email") && prompt.includes("@")) {
+        let sendToEmailRes = `The latest price of Bitcoin is: $${latestBitcoinPrice} USD`;
+        let emailTo = prompt.match(/\S+@[^\s.]+\.[^.\s]+/);
+        //sendEmail(sendToEmailRes, emailTo);
+
+        res.json({
+            "message": "Email has been sent!",
+            "status": 200,
+            "data": {
+                "result": `Email has been sent to ${emailTo}!`,
+            },
+        });
+    }
+    else {
+        res.json({
+            "message": "Bad Request!",
+            "status": 400,
+            "data": {
+                "result": "Sorry, we can't recognize that prompt!",
+            },
+        });
+    }
 });
 
 const PORT = 3001;
