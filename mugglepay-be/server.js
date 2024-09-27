@@ -118,7 +118,7 @@ app.post("/api/v1/send-email", async (req, res) => {
 app.post("/api/v1/send-prompt", async (req, res) => {
     let prompt = req.body.prompt.toLowerCase();
 
-    if(prompt.includes("what is") && prompt.includes("what's") && prompt.includes("price") && prompt.includes("bitcoin")) {
+    if((prompt.includes("what is") || prompt.includes("what's")) && prompt.includes("price") && prompt.includes("bitcoin")) {
         const apiKey = "c4729bc9-8aac-4b18-b93b-d82357670aca";
 
         try {
