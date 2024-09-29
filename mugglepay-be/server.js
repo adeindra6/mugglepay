@@ -1,8 +1,9 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
-const request = require("request");
-const sendEmail = require("./email.js");
+
+const callCoinMarketCap = require("./services/fetch_price.js");
+const sendEmail = require("./services/email.js");
 
 const app = express();
 
@@ -16,120 +17,39 @@ app.get("/", (req, res) => {
     });
 });
 
-let latestBitcoinPrice = 0;
-
-function callChatGPT(url, token, message) {
-    return new Promise(function (resolve, reject) {
-        request.post({
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`,
-            },
-            url: url,
-            body: {
-                "model": "openai/gpt-3.5-turbo",
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": message,
-                    }
-                ]
-            },
-            json: true,
-        }, function(error, response, body) {
-            if(error) {
-                reject(error);
-            }
-            resolve(body);
-        });
-    });
-}
-
-function callCoinMarketCap(url, apiKey) {
-    return new Promise(function (resolve, reject) {
-        request.get({
-            "headers": {
-                "Accept": "application/json",
-                "X-CMC_PRO_API_KEY": apiKey,
-            },
-            url: url,
-        }, function(error, response, body) {
-            if(error) {
-                reject(error);
-            }
-            resolve(JSON.parse(body));
-        });
-    })
-}
-
-app.post("/api/v1/chat-gpt", async (req, res) => {
-    const token = "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";
-
-    try {
-        let httpResponse = await callChatGPT("https://openrouter.ai/api/v1/chat/completions", token, req.body.message);
-
-        res.json({
-            "message": "Success!",
-            "status": 200,
-            "data": {
-                "result": httpResponse,
-            },
-        })
-    } catch(err) {
-        res.json({
-            "message": `There's an error when calling the API: ${err}`,
-            "status": 400,
-        })
-    }
-});
-
-app.post("/api/v1/coin-market-cap", async (req, res) => {
-    const apiKey = "c4729bc9-8aac-4b18-b93b-d82357670aca";
-
-    try {
-        let httpResponse = await callCoinMarketCap("https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest", apiKey);
-
-        res.json({
-            "message": "Success!",
-            "status": 200,
-            "data": {
-                "result": httpResponse,
-            },
-        });
-    } catch(err) {
-        res.json({
-            "message": `There's an error when calling the API: ${err}`,
-            "status": 400,
-        });
-    }
-});
-
-app.post("/api/v1/send-email", async (req, res) => {
-    let sendToEmailRes = `The latest price of Bitcoin is ${req.body.data} USD`;
-    sendEmail(sendToEmailRes);
-
-    res.json({
-        "message": "Email has been sent!",
-        "status": 200,
-        "data": sendToEmailRes,
-    });
-});
+let latestCryptosPrice = [];
 
 app.post("/api/v1/send-prompt", async (req, res) => {
     let prompt = req.body.prompt.toLowerCase();
 
-    if((prompt.includes("what is") || prompt.includes("what's")) && prompt.includes("price") && prompt.includes("bitcoin")) {
+    if((prompt.includes("what is") || prompt.includes("what's")) && prompt.includes("price")) {
         const apiKey = "c4729bc9-8aac-4b18-b93b-d82357670aca";
 
         try {
             let httpResponse = await callCoinMarketCap("https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest", apiKey);
-    
-            latestBitcoinPrice = httpResponse.data[0].quote.USD.price.toFixed(2);
+            let splitPrompt = prompt.split(" ");
+
+            for(let i=0; i<httpResponse.data.length; i++) {
+                for(let j=0; j<splitPrompt.length; j++) {
+                    if(splitPrompt[j] == httpResponse.data[i].slug || splitPrompt[j] == httpResponse.data[i].symbol.toLowerCase()) {
+                        latestCryptosPrice.push({
+                            "coin_name": httpResponse.data[i].name,
+                            "price": httpResponse.data[i].quote.USD.price.toFixed(2),
+                        });
+                    }
+                }
+            }
+
+            let result = "";
+            for(let i=0; i<latestCryptosPrice.length; i++) {
+                result = result + `${i+1}. ${latestCryptosPrice[i].coin_name}: $${latestCryptosPrice[i].price} USD\n`;
+            }
+
             res.json({
                 "message": "Success!",
                 "status": 200,
                 "data": {
-                    "result": `The latest price of Bitcoin is: $${httpResponse.data[0].quote.USD.price.toFixed(2)} USD`,
+                    "result": `Here's the latest price of cryptocurrencies:\n${result}`,
                 },
             });
         } catch(err) {

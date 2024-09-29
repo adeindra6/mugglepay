@@ -99,7 +99,7 @@ export default function Home() {
       },
     })
       .then((response) => {
-        setAnswer(response.data.data.result);
+        setAnswer(response.data.data);
       })
       .catch((error) => {
         console.log(error);
@@ -145,7 +145,7 @@ export default function Home() {
         }
         {answer != "" &&
         <div className={styles.ctas}>
-          <h3>{answer}</h3>
+          <pre><h3>{answer.result}</h3></pre>
         </div>
         }
         {chatGPTData != null &&
