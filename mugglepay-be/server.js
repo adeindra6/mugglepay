@@ -1,6 +1,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
+const moment = require("moment");
 
 const callCoinMarketCap = require("./services/fetch_price.js");
 const sendEmail = require("./services/email.js");
@@ -59,8 +60,13 @@ app.post("/api/v1/send-prompt", async (req, res) => {
             });
         }
     }
-    else if(prompt.includes("send") && prompt.includes("@") && prompt.includes("bitcoin") && prompt.includes("price")) {
-        let sendToEmailRes = `The latest price of Bitcoin is: $${latestBitcoinPrice} USD`;
+    else if(prompt.includes("send") && prompt.includes("@") && prompt.includes("price")) {
+        let result = "";
+        for(let i=0; i<latestCryptosPrice.length; i++) {
+            result = result + `${i+1}. ${latestCryptosPrice[i].coin_name}: $${latestCryptosPrice[i].price} USD\n`;
+        }
+
+        let sendToEmailRes = `Here's the latest price of cryptocurrencies:\n${result}`;
         let emailTo = prompt.match(/\S+@[^\s.]+\.[^.\s]+/);
         sendEmail(sendToEmailRes, emailTo);
 
@@ -69,6 +75,17 @@ app.post("/api/v1/send-prompt", async (req, res) => {
             "status": 200,
             "data": {
                 "result": `Email has been sent to ${emailTo}!`,
+            },
+        });
+    }
+    else if(prompt.includes("date") && prompt.includes("today")) {
+        let today = moment().format("MMMM Do YYYY");
+
+        res.json({
+            "message": "Success!",
+            "status": 200,
+            "data": {
+                "result": `Today date is: ${today}`,
             },
         });
     }
