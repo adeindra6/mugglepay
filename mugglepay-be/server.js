@@ -19,9 +19,13 @@ app.get("/", (req, res) => {
 });
 
 let latestCryptosPrice = [];
+const unlistedCrypto = [
+    "celo",
+];
 
 app.post("/api/v1/send-prompt", async (req, res) => {
     let prompt = req.body.prompt.toLowerCase();
+    latestCryptosPrice = [];
 
     if((prompt.includes("what is") || prompt.includes("what's")) && prompt.includes("price")) {
         const apiKey = "c4729bc9-8aac-4b18-b93b-d82357670aca";
@@ -36,6 +40,19 @@ app.post("/api/v1/send-prompt", async (req, res) => {
                         latestCryptosPrice.push({
                             "coin_name": httpResponse.data[i].name,
                             "price": httpResponse.data[i].quote.USD.price.toFixed(2),
+                        });
+                    }
+                }
+            }
+
+            for(let i=0; i<unlistedCrypto.length; i++) {
+                for(let j=0; j<splitPrompt.length; j++) {
+                    if(splitPrompt[j] == unlistedCrypto[i]) {
+                        let quoteResponse = await callCoinMarketCap(`https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest?symbol=${splitPrompt[j]}`, apiKey);
+
+                        latestCryptosPrice.push({
+                            "coin_name": quoteResponse.data[splitPrompt[j].toUpperCase()][0].name,
+                            "price": quoteResponse.data[splitPrompt[j].toUpperCase()][0].quote.USD.price.toFixed(2),
                         });
                     }
                 }
@@ -88,6 +105,47 @@ app.post("/api/v1/send-prompt", async (req, res) => {
                 "result": `Today date is: ${today}`,
             },
         });
+    }
+    else if((prompt.includes("what is") || prompt.includes("what's")) && prompt.includes("top") && prompt.includes("token")) {
+        const apiKey = "c4729bc9-8aac-4b18-b93b-d82357670aca";
+        latestCryptosPrice = [];
+
+        try {
+            let httpResponse = await callCoinMarketCap("https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest", apiKey);
+            let splitPrompt = prompt.split(" ");
+            let limit = 1;
+
+            for(let i=0; i<splitPrompt.length; i++) {
+                if(!isNaN(splitPrompt[i])) {
+                    limit = splitPrompt[i];
+                }
+            }
+
+            for(let i=0; i<limit; i++) {
+                latestCryptosPrice.push({
+                    "coin_name": httpResponse.data[i].name,
+                    "price": httpResponse.data[i].quote.USD.price.toFixed(2),
+                });
+            }
+
+            let result = "";
+            for(let i=0; i<latestCryptosPrice.length; i++) {
+                result = result + `${i+1}. ${latestCryptosPrice[i].coin_name}: $${latestCryptosPrice[i].price} USD\n`;
+            }
+
+            res.json({
+                "message": "Success!",
+                "status": 200,
+                "data": {
+                    "result": `Here's the top ${limit} tokens:\n${result}`,
+                },
+            });
+        } catch(err) {
+            res.json({
+                "message": `There's an error when calling the API: ${err}`,
+                "status": 400,
+            });
+        }
     }
     else {
         res.json({
